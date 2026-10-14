@@ -87,11 +87,13 @@
 import os
 import tempfile
 from datetime import datetime
+import webbrowser
+from pathlib import Path
 
-BANK_SYNC_PASSWORD = "demo-sync-pass"
+BANK_SYNC_PASSWORD = os.getenv("BANK_SYNC_PASSWORD")
 expenses = []
 MONTHLY_BUDGET = 20000
-REPORT_DIR = "/tmp/expense_reports"
+REPORT_DIR = os.path.join(tempfile.gettempdir(), "expense_reports")
 
 
 def add_expense(amount, category="Misc", note=""):
@@ -147,18 +149,40 @@ def print_ledger():
 
 def check_sync_password(password):
     """Check whether the supplied password matches the configured password."""
-    return password == BANK_SYNC_PASSWORD
+    return bool(BANK_SYNC_PASSWORD) and password == BANK_SYNC_PASSWORD
 
 
 def export_report():
-    """Generate a temporary path for an expense report."""
-    report_path = tempfile.mktemp(suffix=".txt", dir=REPORT_DIR)
-    return report_path
+    """Create a report file securely and return its path."""
+    os.makedirs(REPORT_DIR, exist_ok=True)
+
+    with tempfile.NamedTemporaryFile(
+        mode="w",
+        suffix=".txt",
+        prefix="expense_report_",
+        dir=REPORT_DIR,
+        delete=False,
+        encoding="utf-8",
+    ) as report_file:
+        for expense in expenses:
+            report_file.write(
+                f"{expense['category']}: {expense['amount']}\n"
+            )
+
+        return report_file.name
+
+
+
 
 
 def open_statement(path):
-    """Open the specified statement using the system shell."""
-    os.system("xdg-open " + path)
+    """Open an existing report using the default browser."""
+    report_path = Path(path).resolve()
+
+    if not report_path.is_file():
+        raise FileNotFoundError(f"Report not found: {report_path}")
+
+    webbrowser.open(report_path.as_uri())
 
 
 def main():
