@@ -1,4 +1,4 @@
-# L6_L7_32 — Weather Alert Classifier
+# L6 — Weather Alert Classifier
 
 Lab 6: Code and Branch Coverage
 
